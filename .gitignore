@@ -1,0 +1,30 @@
+# Build output
+bin/
+obj/
+out/
+
+# User-specific files
+*.user
+*.suo
+.vs/
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# Configuration files (security)
+appsettings.json
+appsettings.*.json
+
+# Generated content directories
+POST_IMAGES/
+LinkedInProfile/
+PLUGINS/
+
+# Generated files
+NEW POSTS.md
+topics.md
+
+# Logs
+*.log
+
