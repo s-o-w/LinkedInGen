@@ -179,14 +179,27 @@ namespace LinkedInGen
                             }
                             break;
 
-                        // In case "3" of the switch statement in the while loop (when the user is satisfied with the post)
                         case "3":
                             continueEditing = false;
                             Console.WriteLine("\nGreat! Your LinkedIn post is ready to use.");
 
-                            // Save the post to the markdown file
-                            await SavePostToMarkdownFileAsync(postTopic, generatedPost);
+                            // Generate an image for the post before saving
+                            Console.WriteLine("\nGenerating an image for your post...");
+                            string imagePath = await GenerateImageForPostAsync(generatedPost, postTopic);
+                            if (!string.IsNullOrEmpty(imagePath))
+                            {
+                                Console.WriteLine($"Image generated successfully at: {imagePath}");
+                                // Save the post with the generated image
+                                await SavePostToMarkdownFileAsync(postTopic, generatedPost, imagePath);
+                            }
+                            else
+                            {
+                                Console.WriteLine("Could not generate an image for your post.");
+                                // Save the post without an image
+                                await SavePostToMarkdownFileAsync(postTopic, generatedPost);
+                            }
                             break;
+                            
 
                         default:
                             Console.WriteLine("\nInvalid option. Continuing with current post.");
@@ -421,7 +434,8 @@ namespace LinkedInGen
                 // Use the same configuration as your text generation
                 var configBuilder = new ConfigurationBuilder()
                     .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json", optional: false);
+                    .AddJsonFile("appsettings.json", optional: false)
+                    .AddUserSecrets<PostGenerator>();
 
                 var configuration = configBuilder.Build();
 
@@ -513,10 +527,10 @@ namespace LinkedInGen
         private string GenerateImagePromptFromPost(string postContent)
         {
             // Extract key concepts from the post to create a prompt for DALL-E
-            string prompt = $"Create a professional LinkedIn hero image that represents the following post: {postContent.Substring(0, Math.Min(200, postContent.Length))}";
+            string prompt = $"Create a professional hero image that represents the following post: {postContent}";
 
             // Add stylistic guidance to match professional LinkedIn aesthetic
-            prompt += " The image should be clean, professional, with a modern tech feel. Include subtle visual metaphors related to utilities, energy, or software engineering. Use a clean color palette with blues and whites. No text overlay needed. Make it suitable as a LinkedIn post header.";
+            prompt += " The image should be clean, professional, with a modern tech feel. Include subtle visual metaphors related to utilities, energy, and/or software engineering. DO NOT ADD TEXT TO THE IMAGE!! Make it suitable as a social media post header.";
 
             return prompt;
         }

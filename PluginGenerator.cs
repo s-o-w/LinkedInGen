@@ -489,7 +489,8 @@ namespace LinkedInGen
             sb.AppendLine("- DO NOT USE EMDASHES!!! Use commas, periods, and other punctuation as appropriate. BUT DO NOT, I REPEAT, DO NOT USE EMDASHES!!!");
             sb.AppendLine("- Match their tone, style, and perspective based on their profile and writing samples.");
             sb.AppendLine("- Incorporate their professional expertise, experience, and interests into the content when relevant.");
-            sb.AppendLine("- Use emojis and/or emoticons where appropriate, but sparsly, no more than 2-3 per post.");
+            sb.AppendLine("- Use appropriate emojis and/or emoticons but no more than 2-3 per post.");
+            sb.AppendLine("  - Always include at least one emoji or emoticon that fits into the theme of the article.");
             sb.AppendLine("- generate the post as properly formatted markdown that can be displayed properly in a LinkedIn post");
             sb.AppendLine("- SERIOUSLY, DO NOT USE EMDASHES!!!");
             sb.AppendLine();
