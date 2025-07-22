@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-
-namespace LinkedInGen
+﻿namespace LinkedInGen
 {
     /// <summary>
     /// Main entry point class for the LinkedInGen application.
