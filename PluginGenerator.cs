@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using CsvHelper;
 using CsvHelper.Configuration;
 using System.Globalization;
@@ -55,13 +50,13 @@ namespace LinkedInGen
             {
                 Console.WriteLine(message);
                 string directory = Console.ReadLine()?.Trim() ?? "";
-                
+
                 if (string.IsNullOrEmpty(directory))
                 {
                     Console.WriteLine("Directory cannot be empty. Please try again.");
                     continue;
                 }
-                
+
                 if (!Directory.Exists(directory))
                 {
                     Console.WriteLine("Directory does not exist. Would you like to create it? (y/n)");
@@ -74,7 +69,7 @@ namespace LinkedInGen
                         continue;
                     }
                 }
-                
+
                 return directory;
             }
         }
@@ -87,34 +82,34 @@ namespace LinkedInGen
         private List<string> SelectCsvFiles(string directory)
         {
             var csvFiles = Directory.GetFiles(directory, "*.csv").ToList();
-            
+
             if (!csvFiles.Any())
             {
                 Console.WriteLine("No CSV files found in the specified directory.");
                 return new List<string>();
             }
-            
+
             Console.WriteLine("Available CSV files:");
             for (int i = 0; i < csvFiles.Count; i++)
             {
                 Console.WriteLine($"{i + 1}. {Path.GetFileName(csvFiles[i])}");
             }
-            
+
             Console.WriteLine("Enter the numbers of the files you want to analyze (comma-separated) or 'all' to select all files:");
             string input = Console.ReadLine()?.Trim().ToLower() ?? "";
-            
+
             if (input == "all")
             {
                 return csvFiles;
             }
-            
+
             var selectedIndices = input.Split(',')
                 .Select(x => x.Trim())
                 .Where(x => int.TryParse(x, out _))
                 .Select(int.Parse)
                 .Where(i => i > 0 && i <= csvFiles.Count)
                 .ToList();
-            
+
             return selectedIndices.Select(i => csvFiles[i - 1]).ToList();
         }
 
@@ -129,10 +124,10 @@ namespace LinkedInGen
         private async Task ProcessLinkedInProfileAsync(List<string> csvFiles, string outputDirectory)
         {
             Console.WriteLine("Analyzing LinkedIn profile data across multiple files...");
-            
+
             // Combined profile data from all files
             var profileData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-            
+
             try
             {
                 // Extract basic profile information
@@ -145,7 +140,7 @@ namespace LinkedInGen
                     profileData["Headline"] = basicProfile.GetValueOrDefault("Headline", "");
                     profileData["Summary"] = basicProfile.GetValueOrDefault("Summary", "");
                 }
-                
+
                 // Extract positions/experience
                 var positionsFile = csvFiles.FirstOrDefault(f => Path.GetFileName(f).Contains("Positions.csv"));
                 if (positionsFile != null)
@@ -153,7 +148,7 @@ namespace LinkedInGen
                     var positions = ReadLinkedInCsvRows(positionsFile);
                     profileData["Experience"] = positions;
                 }
-                
+
                 // Extract education
                 var educationFile = csvFiles.FirstOrDefault(f => Path.GetFileName(f).Contains("Education.csv"));
                 if (educationFile != null)
@@ -161,7 +156,7 @@ namespace LinkedInGen
                     var education = ReadLinkedInCsvRows(educationFile);
                     profileData["Education"] = education;
                 }
-                
+
                 // Extract skills
                 var skillsFile = csvFiles.FirstOrDefault(f => Path.GetFileName(f).Contains("Skills.csv"));
                 if (skillsFile != null)
@@ -169,7 +164,7 @@ namespace LinkedInGen
                     var skills = ReadLinkedInCsvRows(skillsFile);
                     profileData["Skills"] = skills.Select(row => row.GetValueOrDefault("Name", "")).ToList();
                 }
-                
+
                 // Extract sample messages/posts for writing style
                 var sharesFile = csvFiles.FirstOrDefault(f => Path.GetFileName(f).Contains("Shares.csv"));
                 if (sharesFile != null)
@@ -186,26 +181,26 @@ namespace LinkedInGen
                     profileData["MessageSamples"] = recentShares;
                 }
 
-                
+
                 // Generate plugin from combined profile data
                 var pluginContent = GeneratePluginContent(profileData);
-                
+
                 // Create the output directory if needed
                 if (!Directory.Exists(outputDirectory))
                 {
                     Directory.CreateDirectory(outputDirectory);
                 }
-                
+
                 // Write the plugin file
                 string pluginDirectory = Path.Combine(outputDirectory, "LinkedInVoice");
                 if (!Directory.Exists(pluginDirectory))
                 {
                     Directory.CreateDirectory(pluginDirectory);
                 }
-                
+
                 string pluginFilePath = Path.Combine(pluginDirectory, "skprompt.txt");
                 await File.WriteAllTextAsync(pluginFilePath, pluginContent);
-                
+
                 // Create config.json file if it doesn't exist
                 string configFilePath = Path.Combine(pluginDirectory, "config.json");
                 if (!File.Exists(configFilePath))
@@ -220,7 +215,7 @@ namespace LinkedInGen
                         }
                     }");
                 }
-                
+
                 Console.WriteLine($"Successfully created LinkedIn voice plugin at {pluginFilePath}");
             }
             catch (Exception ex)
@@ -238,7 +233,7 @@ namespace LinkedInGen
         private Dictionary<string, string> ReadLinkedInProfileCsv(string filePath)
         {
             var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            
+
             try
             {
                 using var reader = new StreamReader(filePath);
@@ -247,12 +242,12 @@ namespace LinkedInGen
                     HeaderValidated = null, // Ignore header validation
                     MissingFieldFound = null // Ignore missing fields
                 });
-                
+
                 // Read the header row
                 if (csv.Read())
                 {
                     csv.ReadHeader();
-                    
+
                     // Read the first data row
                     if (csv.Read())
                     {
@@ -277,10 +272,10 @@ namespace LinkedInGen
             {
                 Console.WriteLine($"Warning: Issue reading file {Path.GetFileName(filePath)}: {ex.Message}");
             }
-            
+
             return result;
         }
-        
+
         /// <summary>
         /// Reads all rows from a LinkedIn CSV file into a list of dictionaries.
         /// Each row becomes a dictionary with column headers as keys.
@@ -290,7 +285,7 @@ namespace LinkedInGen
         private List<Dictionary<string, string>> ReadLinkedInCsvRows(string filePath)
         {
             var results = new List<Dictionary<string, string>>();
-            
+
             try
             {
                 using var reader = new StreamReader(filePath);
@@ -299,17 +294,17 @@ namespace LinkedInGen
                     HeaderValidated = null, // Ignore header validation
                     MissingFieldFound = null // Ignore missing fields
                 });
-                
+
                 // Read the header row
                 if (csv.Read())
                 {
                     csv.ReadHeader();
-                    
+
                     // Read all data rows
                     while (csv.Read())
                     {
                         var rowData = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                        
+
                         // Add all fields from the CSV to our dictionary
                         foreach (var header in csv.HeaderRecord ?? Array.Empty<string>())
                         {
@@ -324,7 +319,7 @@ namespace LinkedInGen
                                 continue;
                             }
                         }
-                        
+
                         results.Add(rowData);
                     }
                 }
@@ -333,12 +328,12 @@ namespace LinkedInGen
             {
                 Console.WriteLine($"Warning: Issue reading file {Path.GetFileName(filePath)}: {ex.Message}");
             }
-            
+
             return results;
         }
 
         /// <summary>
-        /// Generates the content for a Semantic Kernel plugin prompt file (skprompt.txt) 
+        /// Generates the content for a Semantic Kernel plugin prompt file (skprompt.txt)
         /// based on the analyzed LinkedIn profile data.
         /// Creates a prompt that can be used to generate text in the user's writing style.
         /// </summary>

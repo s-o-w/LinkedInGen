@@ -1,8 +1,4 @@
-using System;
-using System.IO;
 using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.SemanticKernel;
 
@@ -199,7 +195,7 @@ namespace LinkedInGen
                                 await SavePostToMarkdownFileAsync(postTopic, generatedPost);
                             }
                             break;
-                            
+
 
                         default:
                             Console.WriteLine("\nInvalid option. Continuing with current post.");
@@ -212,7 +208,6 @@ namespace LinkedInGen
                 Console.WriteLine($"Error generating LinkedIn post: {ex.Message}");
             }
         }
-
 
         /// <summary>
         /// Generates a LinkedIn post in non-interactive mode using a provided topic.
@@ -300,7 +295,6 @@ namespace LinkedInGen
             // Generate the post
             return await GeneratePostWithFunctionAsync(kernel, linkedInPlugin, topic);
         }
-
 
         /// <summary>
         /// Saves a generated LinkedIn post to a markdown file for future reference.
@@ -431,90 +425,96 @@ namespace LinkedInGen
         {
             try
             {
-                // Use the same configuration as your text generation
                 var configBuilder = new ConfigurationBuilder()
                     .SetBasePath(Directory.GetCurrentDirectory())
-                    .AddJsonFile("appsettings.json", optional: false)
-                    .AddUserSecrets<PostGenerator>();
+                    .AddJsonFile("appsettings.json", optional: false);
 
                 var configuration = configBuilder.Build();
 
-                string endpoint = configuration["AzureOpenAI:Endpoint"];
-                string apiKey = configuration["AzureOpenAI:ApiKey"];
-                string imageDeployment = configuration["AzureOpenAI:ImageDeploymentName"] ?? "dall-e-3";
+                var endpoint = configuration["AzureOpenAIImage:Endpoint"];
+                var deployment = configuration["AzureOpenAIImage:Deployment"];
+                var apiVersion = configuration["AzureOpenAIImage:ApiVersion"];
+                var apiKey = configuration["AzureOpenAIImage:ApiKey"];
 
-                if (string.IsNullOrEmpty(endpoint) || string.IsNullOrEmpty(apiKey))
+
+                if (string.IsNullOrEmpty(apiKey))
                 {
-                    Console.WriteLine("Azure OpenAI endpoint or API key not found in configuration.");
+                    Console.WriteLine("Image API key not set in environment variables.");
                     return null;
                 }
 
-                // Create a short prompt for DALL-E based on the post content
-                string imagePrompt = GenerateImagePromptFromPost(postContent);
+                var basePath = $"openai/deployments/{deployment}/images";
+                var generationUrl = $"{endpoint}{basePath}/generations?api-version={apiVersion}";
 
-                // Call Azure OpenAI DALL-E API to generate the image
-                var client = new HttpClient();
-                client.DefaultRequestHeaders.Add("api-key", apiKey);
-
-                // Updated API endpoint format for Azure OpenAI DALL-E
-                var requestBody = new
+                var generationBody = new
                 {
-                    prompt = imagePrompt,
+                    prompt = GenerateImagePromptFromPost(postContent),
                     n = 1,
-                    size = "1024x1024"
+                    size = "1024x1024",
+                    quality = "medium",
+                    output_format = "png"
                 };
 
-                var content = new StringContent(
-                    JsonSerializer.Serialize(requestBody),
-                    System.Text.Encoding.UTF8,
-                    "application/json");
+                using var client = new HttpClient();
+                using var genRequest = new HttpRequestMessage(HttpMethod.Post, generationUrl);
+                genRequest.Headers.Add("Api-Key", apiKey);
+                var json = System.Text.Json.JsonSerializer.Serialize(generationBody);
+                genRequest.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                // Use the correct endpoint format for your Azure OpenAI deployment
-                var response = await client.PostAsync(
-                    $"{endpoint}/openai/deployments/{imageDeployment}/images/generations?api-version=2023-12-01-preview",
-                    content);
+                var genResponse = await client.SendAsync(genRequest);
+                var genResult = await genResponse.Content.ReadAsStringAsync();
 
-                if (!response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"Image generation API call failed: {response.StatusCode}");
-                    string responseContent = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine(responseContent);
-                    return null;
-                }
-
-                // Parse the response to get image URL directly
-                var responseData = JsonSerializer.Deserialize<JsonElement>(await response.Content.ReadAsStringAsync());
-                var imageUrl = responseData.GetProperty("data")[0].GetProperty("url").GetString();
-
-                // Download the image to a POST_IMAGES directory
-                if (!string.IsNullOrEmpty(imageUrl))
-                {
-                    // Create POST_IMAGES directory if it doesn't exist
-                    string imageDir = Path.Combine(Directory.GetCurrentDirectory(), "POST_IMAGES");
-                    Directory.CreateDirectory(imageDir);
-
-                    // Create a filename with date and topic snippet
-                    string dateStamp = DateTime.Now.ToString("yyyy-MM-dd");
-                    string topicSnippet = new string(topic.Take(30).Where(c => !Path.GetInvalidFileNameChars().Contains(c)).ToArray());
-                    string fileName = $"{dateStamp}_{topicSnippet}.png";
-                    string imageFilePath = Path.Combine(imageDir, fileName);
-
-                    using (var imageResponse = await client.GetAsync(imageUrl))
-                    using (var imageStream = await imageResponse.Content.ReadAsStreamAsync())
-                    using (var fileStream = File.Create(imageFilePath))
-                    {
-                        await imageStream.CopyToAsync(fileStream);
-                    }
-
-                    Console.WriteLine($"Image saved to {imageFilePath}");
-                    return imageFilePath;
-                }
-
-                return null;
+                // Parse and save the image
+                var imagePath = await ParseAndSaveImage(genResult, topic);
+                return imagePath;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error generating image: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Parses the JSON response from the image generation API, extracts the base64-encoded image data,
+        /// saves the image as a PNG file in the POST_IMAGES directory, and returns the file path.
+        /// The image file is named using the current date and a snippet of the post topic for uniqueness.
+        /// If no image data is found or an error occurs, returns null and logs the error.
+        /// </summary>
+        /// <param name="responseJson">The JSON response string from the image generation API.</param>
+        /// <param name="topic">The topic of the LinkedIn post, used for naming the image file.</param>
+        /// <returns>
+        /// A task containing the path to the saved image file if successful; otherwise, null.
+        /// </returns>
+        private async Task<string> ParseAndSaveImage(string responseJson, string topic)
+        {
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(responseJson);
+                var data = doc.RootElement.GetProperty("data");
+                if (data.GetArrayLength() > 0)
+                {
+                    var b64 = data[0].GetProperty("b64_json").GetString();
+                    if (!string.IsNullOrEmpty(b64))
+                    {
+                        var bytes = Convert.FromBase64String(b64);
+                        string imageDir = Path.Combine(Directory.GetCurrentDirectory(), "POST_IMAGES");
+                        Directory.CreateDirectory(imageDir);
+                        string dateStamp = DateTime.Now.ToString("yyyy-MM-dd");
+                        string topicSnippet = new string(topic.Take(30).Where(c => !Path.GetInvalidFileNameChars().Contains(c)).ToArray());
+                        string fileName = $"{dateStamp}_{topicSnippet}.png";
+                        string imageFilePath = Path.Combine(imageDir, fileName);
+                        await File.WriteAllBytesAsync(imageFilePath, bytes);
+                        Console.WriteLine($"Image saved to: {imageFilePath}");
+                        return imageFilePath;
+                    }
+                }
+                Console.WriteLine("No image data found in response.");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error parsing image response: {ex.Message}");
                 return null;
             }
         }
@@ -530,55 +530,9 @@ namespace LinkedInGen
             string prompt = $"Create a professional hero image that represents the following post: {postContent}";
 
             // Add stylistic guidance to match professional LinkedIn aesthetic
-            prompt += " The image should be clean, professional, with a modern tech feel. Include subtle visual metaphors related to utilities, energy, and/or software engineering. DO NOT ADD TEXT TO THE IMAGE!! Make it suitable as a social media post header.";
+            prompt += " The image should be clean, professional, visually striking and compelling and have a modern tech feel. Include subtle visual metaphors related to electrical utilities, energy, and/or software engineering. Only add text to the image if it enhances the overall message, but it should be very sparing if used at all. Make it suitable as a social media post header.";
 
             return prompt;
-        }
-
-        /// <summary>
-        /// Polls the Azure OpenAI API for the result of an asynchronous image generation operation.
-        /// </summary>
-        /// <param name="client">The HttpClient instance to use for API requests.</param>
-        /// <param name="endpoint">The Azure OpenAI API endpoint URL.</param>
-        /// <param name="operationId">The ID of the image generation operation to poll.</param>
-        /// <returns>A task containing the URL of the generated image if successful, or null if failed or timed out.</returns>
-        private async Task<string> PollForImageGenerationResult(HttpClient client, string endpoint, string operationId)
-        {
-            int maxAttempts = 30;
-            int attempt = 0;
-            int delayMs = 1000;
-
-            while (attempt < maxAttempts)
-            {
-                attempt++;
-
-                var response = await client.GetAsync($"{endpoint}/openai/operations/images/{operationId}?api-version=2023-06-01-preview");
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var responseData = JsonSerializer.Deserialize<JsonElement>(await response.Content.ReadAsStringAsync());
-
-                    if (responseData.TryGetProperty("status", out var status) && status.GetString() == "succeeded")
-                    {
-                        // Get the image URL
-                        var result = responseData.GetProperty("result");
-                        var data = result.GetProperty("data")[0];
-                        return data.GetProperty("url").GetString();
-                    }
-                    else if (responseData.TryGetProperty("status", out var failStatus) &&
-                            (failStatus.GetString() == "failed" || failStatus.GetString() == "cancelled"))
-                    {
-                        Console.WriteLine("Image generation failed or was cancelled.");
-                        return null;
-                    }
-                }
-
-                await Task.Delay(delayMs);
-                delayMs = Math.Min(delayMs * 2, 10000); // Exponential backoff, max 10 seconds
-            }
-
-            Console.WriteLine($"Timeout waiting for image generation after {maxAttempts} attempts.");
-            return null;
         }
     }
 }

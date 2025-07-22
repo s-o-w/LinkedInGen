@@ -1,146 +1,112 @@
 # LinkedInGen
 
-LinkedInGen is a tool that generates personalized LinkedIn posts in your own writing style using AI. It analyzes your LinkedIn data export (including your profile, articles, and shares) to create authentic-sounding content based on topics you provide.
+LinkedInGen is a .NET console application that helps you generate LinkedIn posts in your own voice using AI. It analyzes your LinkedIn profile data and creates Semantic Kernel plugins to mimic your writing style. You can then generate posts on topics you provide, revise them interactively, and automatically generate relevant images.
 
 ## Features
 
-- **Profile Analysis**: Processes your LinkedIn profile export to understand your professional background and writing style
-- **Voice Capture**: Creates a Semantic Kernel plugin that mimics your writing style
-- **Post Generation**: Creates LinkedIn posts on topics you specify that sound authentically like you wrote them
-- **Image Generation**: Creates relevant images to accompany your posts using DALL-E 3
-- **Email Delivery**: Sends the generated posts to your email address
-- **Automation Support**: Can be set up as a cron job to generate posts automatically
+- **Profile Analysis**: Select CSV files from your LinkedIn data export to analyze your writing style.
+- **Plugin Generation**: Save prompts as `skprompt.txt` plugins for use with Semantic Kernel.
+- **Post Generation**: Enter a topic and details, then generate a LinkedIn post in your voice. Optionally revise the post in a loop.
+- **Image Generation**: Automatically create a relevant image for each post using Azure OpenAI's image API.
+- **Markdown Output**: Save generated posts and images to `NEW POSTS.md`.
+- **Email Delivery**: Send generated posts and images to your email address.
+- **Automation**: Supports cron jobs for scheduled post generation.
 
-## Prerequisites
+## Getting Started
+
+### Prerequisites
 
 - **.NET 8.0 or higher**
-- **LinkedIn Data Export** (instructions below)
-- **Azure OpenAI API access** with GPT-4 and DALL-E 3 deployments
-- **Gmail account** with an app password (for email functionality)
+- **Azure OpenAI API access** (GPT-4 and GPT-IMAGE-1 deployments (*you have to request access to gpt-image-1*))
+  - **NOTE**: Semantic Kernel supports almost all of the LLMs/API availalbe to developers, not just Azure. If you want to
+  use other LLM providers (like Gemini or a locally hosted one) just alter the code accordingly; I didn't take the time to make it more configurable.
+- **Gmail account** with an app password (for email delivery)
 
-## Setup Instructions
+### Setup
 
-### 1. Export Your LinkedIn Data
+1. **Export Your LinkedIn Data**
+   - Download your LinkedIn data export (CSV format).
+   - Place the files in a directory of your choice.
 
-1. Log in to LinkedIn
-2. Go to your profile > Settings & Privacy > Data Privacy > How LinkedIn uses your data
-3. Click "Get a copy of your data"
-4. Request an archive of your data (select all data)
-5. LinkedIn will email you when your data is ready to download (usually takes a few hours to a day)
-6. Download and extract the archive to a directory called `LinkedInProfile` in the project root
+2. **Configure Azure OpenAI**
+   - Create an Azure OpenAI resource and deploy GPT-4 and GPT-Image-1 or DALL-E 3.
+   - Copy your endpoint URLs and API keys.
 
-### 2. Configure Your Azure OpenAI Access
+3. **Configure the Application**
+   - Create an `appsettings.json` file in the project root with your Azure OpenAI and email settings:
+     ```json
+     {
+       "AzureOpenAI": {
+         "Endpoint": "https://your-resource-name.openai.azure.com/",
+         "ApiKey": "your-api-key-here",
+         "DeploymentName": "your-gpt-deployment-name"
+       },
+       "AzureOpenAIImage": {
+         "Endpoint": "https://your-image-resource-name.cognitiveservices.azure.com/",
+         "Deployment": "your-image-deployment-name",
+         "ApiVersion": "your-targeted-API-version",
+         "ApiKey": "your-image-api-key-here"
+       },
+       "Email": {
+         "SmtpServer": "smtp.gmail.com",
+         "SmtpPort": 587,
+         "SenderEmail": "your-email@gmail.com",
+         "SenderPassword": "your-gmail-app-password",
+         "EnableSSL": true
+       }
+     }
+     ```
 
-1. Create an Azure OpenAI resource if you don't have one already
-2. Deploy GPT-4 (or similar model) and DALL-E 3 models
-3. Note your endpoint URL and API key
-4. Create an `appsettings.json` file in the project root with the following content:
+4. **Set Up Gmail App Password**
+   - Enable 2-Step Verification in your Google Account.
+   - Generate an app password for Gmail and use it in `appsettings.json`.
 
-```json
-{
-  "AzureOpenAI": {
-    "Endpoint": "https://your-resource-name.openai.azure.com/",
-    "ApiKey": "your-api-key-here",
-    "DeploymentName": "your-gpt-deployment-name",
-    "ImageDeploymentName": "dall-e-3"
-  },
-  "Email": {
-    "SmtpServer": "smtp.gmail.com",
-    "SmtpPort": 587,
-    "SenderEmail": "your-email@gmail.com",
-    "SenderPassword": "your-gmail-app-password",
-    "EnableSSL": true
-  }
-}
-```
+5. **Create Topics File**
+   - Add a `topics.md` file in the project root with your post topics.
 
-### 3. Set Up Gmail App Password
+### Usage
 
-1. Go to your Google Account > Security
-2. Enable 2-Step Verification if not already enabled
-3. Go to "App passwords"
-4. Select "Mail" and your device
-5. Generate and copy the 16-character password to use in your `appsettings.json`
+- **Interactive Mode**:
+  Run the program and follow prompts to select LinkedIn CSV files, generate plugins, and create posts.
+  ```bash
+  dotnet run
+  ```
 
-### 4. Create Topics File
+- **Command Line Mode**:
+  Generate a post on a specific topic:
+  ```bash
+  dotnet run post "Your topic here"
+  ```
+  Or use the next topic from `topics.md`:
+  ```bash
+  dotnet run post
+  ```
 
-Create a file named `topics.md` in the project root with topics for post generation:
+- **Automated Mode**:
+  Set up a cron job to run the program automatically and log output:
+  ```
+  45 8 * * 1-5 cd /home/projectLocation/LinkedInGen && dotnet run post >> logs/cron.log 2>&1
+  ```
 
-```markdown
-# LinkedIn Post Topics
+### Output
 
-**TOPIC** The case for implementing data standards like CIM or IFC across utility organizations - breaking data silos for better interoperability
-
-**TOPIC** Why simple software solutions win in the utility industry - the dangers of over-engineering and over-architecting from day one
-
-**TOPIC** Comparing IFC and CIM standards - could we adapt building information modeling approaches for high-voltage electrical infrastructure?
-
-**TOPIC** The real value of AI isn't replacing engineers - it's automating the mundane tasks that slow us down
-```
-
-The program will process topics marked with `**TOPIC**` and mark them as `**USED**` after generating posts for them.
-
-## Usage
-
-### Interactive Mode
-
-Run the program without arguments to use the interactive menu:
-
-```bash
-dotnet run
-```
-
-### Command Line Mode
-
-Generate a post on a specific topic:
-
-```bash
-dotnet run post "Your topic here"
-```
-
-Without a specific topic, the program will use the next available topic from your `topics.md` file:
-
-```bash
-dotnet run post
-```
-
-### Automated Daily Posts
-
-Set up a cron job to generate posts automatically. For example, to run daily at 8:20 AM:
-
-```bash
-crontab -e
-```
-
-Add the line:
-
-```
-20 8 * * * cd /home/shawn/Projects/LinkedInGen && dotnet run post >> /home/shawn/Projects/LinkedInGen/cron.log 2>&1
-```
-
-## Output
-
-- Generated posts are saved to `NEW POSTS.md` for your review
-- Images are saved to the `POST_IMAGES` directory
-- Generated posts and images are emailed to your configured email address
-
-## Using a Different LLM Provider
-
-This project is configured for Azure OpenAI by default. If you want to use a different provider:
-
-1. Modify the `PostGenerator.cs` file to use your preferred LLM API
-2. Update the configuration structure in `appsettings.json` accordingly
-3. If using the image generation feature, you'll need to update that code as well
+- Posts and images are saved to `NEW POSTS.md` and `POST_IMAGES/`.
+- Emails are sent to your configured address.
 
 ## Directory Structure
 
-- `LinkedInProfile/` - Place your LinkedIn data export here
-- `PLUGINS/` - Generated Semantic Kernel plugins will be stored here
-- `POST_IMAGES/` - Generated images for posts
-- `NEW POSTS.md` - Output file with all generated posts
+- `PLUGINS/` - Semantic Kernel plugins (`skprompt.txt`)
+- `POST_IMAGES/` - Generated images
+- `NEW POSTS.md` - Markdown file with all posts
+- `topics.md` - List of post topics
 
-## Troubleshooting
+## Notes
 
-- **LinkedIn Data Format**: If your LinkedIn export format changes, you may need to update the parsing logic in `PluginGenerator.cs`
-- **API Limits**: Be mindful of Azure OpenAI rate limits, especially when running in batch mode
-- **Email Issues**: If emails aren't being sent, check your app password and email settings
+- Keep your `appsettings.json` secure; it contains API keys and passwords.
+  - HINT: take advantage of ``` dotnet user-secrets ```
+- The code is designed to be as simple and maintainable as possible.
+- For troubleshooting, check the console output and log files.
+
+---
+
+For questions or contributions, open an issue
