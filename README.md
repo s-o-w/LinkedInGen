@@ -81,6 +81,15 @@ LinkedInGen is a .NET console application that helps you generate LinkedIn posts
   ```bash
   dotnet run post
   ```
+    - Your topic.md file should have 1 to N lines that look like this:
+    ```
+    **TOPIC** Digital Transformation in Utilities
+
+    **TOPIC** The Role of Open Standards in Infrastructure
+
+    **TOPIC** Balancing Innovation and Stability in Engineering
+    ```
+    Your topics should have enough informaiton to generate a good post, 2 or 3 good sentenaces that provide a solid topic is enough.  When a topic is used, it will be marked as such.
 
 - **Automated Mode**:
   Set up a cron job to run the program automatically and log output:
