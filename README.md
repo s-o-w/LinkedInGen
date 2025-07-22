@@ -12,14 +12,17 @@ LinkedInGen is a .NET console application that helps you generate LinkedIn posts
 - **Email Delivery**: Send generated posts and images to your email address.
 - **Automation**: Supports cron jobs for scheduled post generation.
 
+## Cross-Platform Support
+
+LinkedInGen is built with .NET, which is cross-platform and runs on **Linux**, **macOS**, and **Windows**.
+You can develop and run the application on any of these operating systems using the same codebase and commands.
+
 ## Getting Started
 
 ### Prerequisites
 
 - **.NET 8.0 or higher**
-- **Azure OpenAI API access** (GPT-4 and GPT-IMAGE-1 deployments (*you have to request access to gpt-image-1*))
-  - **NOTE**: Semantic Kernel supports almost all of the LLMs/API availalbe to developers, not just Azure. If you want to
-  use other LLM providers (like Gemini or a locally hosted one) just alter the code accordingly; I didn't take the time to make it more configurable.
+- **Azure OpenAI API access** (GPT-4 and GPT-IMAGE-1 deployments)
 - **Gmail account** with an app password (for email delivery)
 
 ### Setup
@@ -81,7 +84,7 @@ LinkedInGen is a .NET console application that helps you generate LinkedIn posts
   ```bash
   dotnet run post
   ```
-    - Your topic.md file should have 1 to N lines that look like this:
+    - Your topics.md file should have 1 to N lines that look like this:
     ```
     **TOPIC** Digital Transformation in Utilities
 
@@ -89,7 +92,7 @@ LinkedInGen is a .NET console application that helps you generate LinkedIn posts
 
     **TOPIC** Balancing Innovation and Stability in Engineering
     ```
-    Your topics should have enough informaiton to generate a good post, 2 or 3 good sentenaces that provide a solid topic is enough.  When a topic is used, it will be marked as such.
+    Your topics should have enough information to generate a good post; 2 or 3 good sentences that provide a solid topic is enough. When a topic is used, it will be marked as such.
 
 - **Automated Mode**:
   Set up a cron job to run the program automatically and log output:
@@ -112,10 +115,10 @@ LinkedInGen is a .NET console application that helps you generate LinkedIn posts
 ## Notes
 
 - Keep your `appsettings.json` secure; it contains API keys and passwords.
-  - HINT: take advantage of ``` dotnet user-secrets ```
+  - HINT: take advantage of `dotnet user-secrets`
 - The code is designed to be as simple and maintainable as possible.
 - For troubleshooting, check the console output and log files.
 
 ---
 
-For questions or contributions, open an issue
+For questions or contributions,
