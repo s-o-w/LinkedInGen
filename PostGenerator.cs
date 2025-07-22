@@ -523,14 +523,19 @@ namespace LinkedInGen
         /// Creates an image generation prompt based on the LinkedIn post content.
         /// </summary>
         /// <param name="postContent">The content of the LinkedIn post.</param>
-        /// <returns>A prompt string optimized for generating a relevant professional image with DALL-E.</returns>
+        /// <returns>A prompt string optimized for generating a relevant professional image.</returns>
         private string GenerateImagePromptFromPost(string postContent)
         {
-            // Extract key concepts from the post to create a prompt for DALL-E
+            // Extract key concepts from the post to create a prompt for the image
             string prompt = $"Create a professional hero image that represents the following post: {postContent}";
 
-            // Add stylistic guidance to match professional LinkedIn aesthetic
-            prompt += " The image should be clean, professional, visually striking and compelling and have a modern tech feel. Include subtle visual metaphors related to electrical utilities, energy, and/or software engineering. Only add text to the image if it enhances the overall message, but it should be very sparing if used at all. Make it suitable as a social media post header.";
+            // Add stylistic guidance
+            prompt += " The image should be clean, professional, visually striking and compelling and have a modern tech feel. ";
+            prompt += "Include subtle visual metaphors related to electrical utilities, energy, and/or software engineering. ";
+            prompt += "Only add text to the image if it enhances the overall message, but it should be very sparing if used at all. ";
+            prompt += "Make it suitable as a social media post header. Use a colorscheme that invokes thoughts of ";
+            prompt += "electrical utilities, energy, and/or software engineering. The image should be suitable for a social media post ";
+            prompt += "and be visually appealing to professionals in the field.";
 
             return prompt;
         }

@@ -480,6 +480,13 @@ namespace LinkedInGen
                 }
             }
 
+
+            sb.AppendLine();
+            sb.AppendLine("INPUT:");
+            sb.AppendLine("{{$input}}");
+            sb.AppendLine();
+            sb.AppendLine("OUTPUT:");
+            sb.AppendLine("[");
             sb.AppendLine("\nBased on the profile information above, when given a topic or subject, write a LinkedIn post that sounds authentically like this person would write it.");
             sb.AppendLine("- DO NOT USE EMDASHES!!! Use commas, periods, and other punctuation as appropriate. BUT DO NOT, I REPEAT, DO NOT USE EMDASHES!!!");
             sb.AppendLine("- Match their tone, style, and perspective based on their profile and writing samples.");
@@ -488,12 +495,7 @@ namespace LinkedInGen
             sb.AppendLine("  - Always include at least one emoji or emoticon that fits into the theme of the article.");
             sb.AppendLine("- generate the post as properly formatted markdown that can be displayed properly in a LinkedIn post");
             sb.AppendLine("- SERIOUSLY, DO NOT USE EMDASHES!!!");
-            sb.AppendLine();
-            sb.AppendLine("INPUT:");
-            sb.AppendLine("{{$input}}");
-            sb.AppendLine();
-            sb.AppendLine("OUTPUT:");
-            sb.AppendLine("[Write a LinkedIn post in the style and voice of the profile described above, focusing on the topic provided in the input]");
+            sb.AppendLine("]");
 
             return sb.ToString();
         }
