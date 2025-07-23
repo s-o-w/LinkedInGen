@@ -501,7 +501,7 @@ namespace LinkedInGen
                         string imageDir = Path.Combine(Directory.GetCurrentDirectory(), "POST_IMAGES");
                         Directory.CreateDirectory(imageDir);
                         string dateStamp = DateTime.Now.ToString("yyyy-MM-dd");
-                        string topicSnippet = new string(topic.Take(30).Where(c => !Path.GetInvalidFileNameChars().Contains(c)).ToArray());
+                        string topicSnippet = new string(topic.Where(c => char.IsLetterOrDigit(c)).Take(30).ToArray());
                         string fileName = $"{dateStamp}_{topicSnippet}.png";
                         string imageFilePath = Path.Combine(imageDir, fileName);
                         await File.WriteAllBytesAsync(imageFilePath, bytes);
