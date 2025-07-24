@@ -530,7 +530,8 @@ namespace LinkedInGen
             string prompt = $"Create a professional hero image that represents the following post: {postContent}";
 
             // Add stylistic guidance
-            prompt += " The image should be clean, professional, visually striking and compelling and have a modern tech feel. ";
+            prompt += "The image should be styled like a 1940s propaganda poster, it should have a vintage look and feel. ";
+            prompt += "The image should be clean, professional, visually striking and have a modern tech feel, while still having that vintage 1940s vibe. ";
             prompt += "Include subtle visual metaphors related to electrical utilities, energy, and/or software engineering. ";
             prompt += "Only add text to the image if it enhances the overall message, but it should be very sparing if used at all. ";
             prompt += "Make it suitable as a social media post header. Use a colorscheme that invokes thoughts of ";
